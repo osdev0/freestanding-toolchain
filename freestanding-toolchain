@@ -1,0 +1,287 @@
+#! /bin/sh
+
+# Copyright (C) 2023 mintsuki and contributors.
+#
+# Permission to use, copy, modify, and/or distribute this software
+# for any purpose with or without fee is hereby granted.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+# WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+# AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+# DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+# DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+# OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+# USE OR PERFORMANCE OF THIS SOFTWARE.
+
+set -e
+
+export LC_ALL=C
+
+IFS=" ""	"'
+'
+
+if [ -z "$ARCHITECTURE" ]; then
+    echo "ERROR: ARCHITECTURE must be specified" 1>&2
+    exit 1
+fi
+
+case "$ARCHITECTURE" in
+    arm)
+        TRIPLET=${ARCHITECTURE}-none-eabi
+        ;;
+    *)
+        TRIPLET=${ARCHITECTURE}-elf
+        ;;
+esac
+
+check_component() {
+    if eval [ "x\$WANT_$1" = "xyes" ]; then
+        printf "checking for $2... " 1>&2
+        if ! command -v $2 >/dev/null 2>&1; then
+            echo "no" 1>&2
+            return 1
+        fi
+        echo "yes" 1>&2
+        eval "_$1"="$2"
+    fi
+}
+
+validate_cc() {
+    CC_MACHINE="$($1 -dumpmachine | sed 's/-.*//g')"
+
+    if [ "x$CC_MACHINE" = "xamd64" ]; then
+        CC_MACHINE=x86_64
+    fi
+
+    if [ "x$CC_MACHINE" = "xx86_64" ]; then
+        case "$ARCHITECTURE" in
+            i?86)
+                CC_MACHINE="$ARCHITECTURE"
+                ;;
+        esac
+    fi
+
+    if ! [ "x$CC_MACHINE" = "x$ARCHITECTURE" ] || ! echo | $1 -x c -c - -o /dev/null >/dev/null 2>&1; then
+        return 1
+    fi
+}
+
+unset_toolchain() {
+    unset _CROSS_ADDR2LINE
+    unset _CROSS_AR
+    unset _CROSS_CC
+    unset _CROSS_CXXFILT
+    unset _CROSS_LD
+    unset _CROSS_NM
+    unset _CROSS_OBJCOPY
+    unset _CROSS_OBJDUMP
+    unset _CROSS_RANLIB
+    unset _CROSS_READELF
+    unset _CROSS_SIZE
+    unset _CROSS_STRINGS
+    unset _CROSS_STRIP
+}
+
+unset_toolchain
+
+TOOLCHAIN_VALID=no
+
+# First check if we have LLVM
+if [ -z "$CROSS_TOOLCHAIN" ] || [ "x$CROSS_TOOLCHAIN" = "xllvm" ]; then while true; do
+    if [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE llvm-addr2line || break; fi
+    if [ -z "$CROSS_AR" ]; then check_component CROSS_AR llvm-ar || break; fi
+    if [ -z "$CROSS_CC" ]; then check_component CROSS_CC clang || break; fi
+    if [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT llvm-cxxfilt || break; fi
+    if [ -z "$CROSS_LD" ]; then check_component CROSS_LD ld.lld || break; fi
+    if [ -z "$CROSS_NM" ]; then check_component CROSS_NM llvm-nm || break; fi
+    if [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY llvm-objcopy || break; fi
+    if [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP llvm-objdump || break; fi
+    if [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB llvm-ranlib || break; fi
+    if [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF llvm-readelf || break; fi
+    if [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE llvm-size || break; fi
+    if [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS llvm-strings || break; fi
+    if [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP llvm-strip || break; fi
+
+    if [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
+        _CROSS_CC="clang -target $TRIPLET"
+        validate_cc "$_CROSS_CC" || break
+    fi
+
+    TOOLCHAIN_VALID=yes
+    break
+done; fi
+
+if [ "$TOOLCHAIN_VALID" = "no" ]; then
+    if [ "x$CROSS_TOOLCHAIN" = "xllvm" ]; then
+        echo "ERROR: could not detect LLVM toolchain" 1>&2
+        exit 1
+    fi
+
+    unset_toolchain
+fi
+
+# Now try a prefixed GCC toolchain
+ENFORCE_TOOLCHAIN=no
+if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
+    if [ -z "$CROSS_TOOLCHAIN" ]; then
+        CROSS_TOOLCHAIN="$TRIPLET"
+    else
+        ENFORCE_TOOLCHAIN=yes
+    fi
+
+    if [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE $CROSS_TOOLCHAIN-addr2line || break; fi
+    if [ -z "$CROSS_AR" ]; then check_component CROSS_AR $CROSS_TOOLCHAIN-ar || break; fi
+    if [ -z "$CROSS_CC" ]; then check_component CROSS_CC $CROSS_TOOLCHAIN-gcc || break; fi
+    if [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT $CROSS_TOOLCHAIN-c++filt || break; fi
+    if [ -z "$CROSS_LD" ]; then check_component CROSS_LD $CROSS_TOOLCHAIN-ld || break; fi
+    if [ -z "$CROSS_NM" ]; then check_component CROSS_NM $CROSS_TOOLCHAIN-nm || break; fi
+    if [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY $CROSS_TOOLCHAIN-objcopy || break; fi
+    if [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP $CROSS_TOOLCHAIN-objdump || break; fi
+    if [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB $CROSS_TOOLCHAIN-ranlib || break; fi
+    if [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF $CROSS_TOOLCHAIN-readelf || break; fi
+    if [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE $CROSS_TOOLCHAIN-size || break; fi
+    if [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS $CROSS_TOOLCHAIN-strings || break; fi
+    if [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP $CROSS_TOOLCHAIN-strip || break; fi
+
+    if [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
+        validate_cc "$_CROSS_CC" || break
+    fi
+
+    TOOLCHAIN_VALID=yes
+    break
+done; fi
+
+if [ "$TOOLCHAIN_VALID" = "no" ]; then
+    if [ "$ENFORCE_TOOLCHAIN" = "yes" ]; then
+        echo "ERROR: requested toolchain not valid" 1>&2
+        exit 1
+    fi
+
+    unset_toolchain
+fi
+
+# If $CC is passed, try a toolchain based on the triplet of $CC
+if ! [ -z "$CC" ] && [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
+    CC_TRIPLET="$($CC -dumpmachine)"
+
+    if [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE $CC_TRIPLET-addr2line || break; fi
+    if [ -z "$CROSS_AR" ]; then check_component CROSS_AR $CC_TRIPLET-ar || break; fi
+    if [ -z "$CROSS_CC" ]; then check_component CROSS_CC $CC_TRIPLET-gcc || break; fi
+    if [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT $CC_TRIPLET-c++filt || break; fi
+    if [ -z "$CROSS_LD" ]; then check_component CROSS_LD $CC_TRIPLET-ld || break; fi
+    if [ -z "$CROSS_NM" ]; then check_component CROSS_NM $CC_TRIPLET-nm || break; fi
+    if [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY $CC_TRIPLET-objcopy || break; fi
+    if [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP $CC_TRIPLET-objdump || break; fi
+    if [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB $CC_TRIPLET-ranlib || break; fi
+    if [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF $CC_TRIPLET-readelf || break; fi
+    if [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE $CC_TRIPLET-size || break; fi
+    if [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS $CC_TRIPLET-strings || break; fi
+    if [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP $CC_TRIPLET-strip || break; fi
+
+    if [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
+        validate_cc "$_CROSS_CC" || break
+    fi
+
+    TOOLCHAIN_VALID=yes
+    break
+done; fi
+
+# Lastly, try a toolchain made up of unprefixed utilities
+if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
+    unset_toolchain
+
+    if [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE addr2line || break; fi
+    if [ -z "$CROSS_AR" ]; then check_component CROSS_AR ar || break; fi
+    if [ -z "$CROSS_CC" ]; then check_component CROSS_CC gcc || break; fi
+    if [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT c++filt || break; fi
+    if [ -z "$CROSS_LD" ]; then check_component CROSS_LD ld || break; fi
+    if [ -z "$CROSS_NM" ]; then check_component CROSS_NM nm || break; fi
+    if [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY objcopy || break; fi
+    if [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP objdump || break; fi
+    if [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB ranlib || break; fi
+    if [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF readelf || break; fi
+    if [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE size || break; fi
+    if [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS strings || break; fi
+    if [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP strip || break; fi
+
+    if [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
+        validate_cc "$_CROSS_CC" || break
+    fi
+
+    TOOLCHAIN_VALID=yes
+    break
+done; fi
+
+if [ "$TOOLCHAIN_VALID" = "no" ]; then
+    echo "ERROR: could not find any valid toolchain for target '$ARCHITECTURE'" 1>&2
+    exit 1
+fi
+
+custom_check_fail() {
+    echo "ERROR: custom toolchain component '$1' not valid" 1>&2
+    exit 1
+}
+
+if ! [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE "$CROSS_ADDR2LINE" || custom_check_fail "$CROSS_ADDR2LINE"; fi
+if ! [ -z "$CROSS_AR" ]; then check_component CROSS_AR "$CROSS_AR" || custom_check_fail "$CROSS_AR"; fi
+if ! [ -z "$CROSS_CC" ]; then check_component CROSS_CC "$CROSS_CC" || custom_check_fail "$CROSS_CC"; fi
+if ! [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT "$CROSS_CXXFILT" || custom_check_fail "$CROSS_CXXFILT"; fi
+if ! [ -z "$CROSS_LD" ]; then check_component CROSS_LD "$CROSS_LD" || custom_check_fail "$CROSS_LD"; fi
+if ! [ -z "$CROSS_NM" ]; then check_component CROSS_NM "$CROSS_NM" || custom_check_fail "$CROSS_NM"; fi
+if ! [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY "$CROSS_OBJCOPY" || custom_check_fail "$CROSS_OBJCOPY"; fi
+if ! [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP "$CROSS_OBJDUMP" || custom_check_fail "$CROSS_OBJDUMP"; fi
+if ! [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB "$CROSS_RANLIB" || custom_check_fail "$CROSS_RANLIB"; fi
+if ! [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF "$CROSS_READELF" || custom_check_fail "$CROSS_READELF"; fi
+if ! [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE "$CROSS_SIZE" || custom_check_fail "$CROSS_SIZE"; fi
+if ! [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS "$CROSS_STRINGS" || custom_check_fail "$CROSS_STRING"; fi
+if ! [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP "$CROSS_STRIP" || custom_check_fail "$CROSS_STRIP"; fi
+
+if ! [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
+    if ! validate_cc "$_CROSS_CC"; then
+        echo "ERROR: C compiler '$CROSS_CC' does not support specified architecture '$ARCHITECTURE'" 1>&2
+        exit 1
+    fi
+fi
+
+unset CROSS_LD_HAS_NO_PIE
+if [ "x$WANT_CROSS_LD" = "xyes" ]; then
+    CROSS_LD_HAS_NO_PIE=no
+
+    if $_CROSS_LD --help 2>&1 | grep 'no-pie' >/dev/null 2>&1; then
+        CROSS_LD_HAS_NO_PIE=yes
+    fi
+fi
+
+# Output the final makefile chunk
+cat <<EOF
+CROSS_ADDR2LINE ?= $_CROSS_ADDR2LINE
+export CROSS_ADDR2LINE
+CROSS_AR ?= $_CROSS_AR
+export CROSS_AR
+CROSS_CC ?= $_CROSS_CC
+export CROSS_CC
+CROSS_CXXFILT ?= $_CROSS_CXXFILT
+export CROSS_CXXFILT
+CROSS_LD ?= $_CROSS_LD
+export CROSS_LD
+CROSS_NM ?= $_CROSS_NM
+export CROSS_NM
+CROSS_OBJCOPY ?= $_CROSS_OBJCOPY
+export CROSS_OBJCOPY
+CROSS_OBJDUMP ?= $_CROSS_OBJDUMP
+export CROSS_OBJDUMP
+CROSS_RANLIB ?= $_CROSS_RANLIB
+export CROSS_RANLIB
+CROSS_READELF ?= $_CROSS_READELF
+export CROSS_READELF
+CROSS_SIZE ?= $_CROSS_SIZE
+export CROSS_SIZE
+CROSS_STRINGS ?= $_CROSS_STRINGS
+export CROSS_STRINGS
+CROSS_STRIP ?= $_CROSS_STRIP
+export CROSS_STRIP
+
+CROSS_LD_HAS_NO_PIE ?= $CROSS_LD_HAS_NO_PIE
+export CROSS_LD_HAS_NO_PIE
+EOF
