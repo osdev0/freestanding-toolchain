@@ -47,7 +47,7 @@ check_component() {
     fi
 }
 
-validate_cc() {
+validate_lang() {
     CC_MACHINE="$($1 -dumpmachine | sed 's/-.*//g')"
 
     if [ "x$CC_MACHINE" = "xamd64" ]; then
@@ -62,15 +62,24 @@ validate_cc() {
         esac
     fi
 
-    if ! [ "x$CC_MACHINE" = "x$ARCHITECTURE" ] || ! echo | $1 -x c -c - -o /dev/null >/dev/null 2>&1; then
+    if ! [ "x$CC_MACHINE" = "x$ARCHITECTURE" ] || ! echo | $1 -x $2 -c - -o /dev/null >/dev/null 2>&1; then
         return 1
     fi
+}
+
+validate_cc() {
+    validate_lang "$1" c
+}
+
+validate_cxx() {
+    validate_lang "$1" c++
 }
 
 unset_toolchain() {
     unset _FREESTANDING_ADDR2LINE
     unset _FREESTANDING_AR
     unset _FREESTANDING_CC
+    unset _FREESTANDING_CXX
     unset _FREESTANDING_CXXFILT
     unset _FREESTANDING_LD
     unset _FREESTANDING_NM
@@ -92,6 +101,7 @@ if [ -z "$FREESTANDING_TOOLCHAIN" ] || [ "x$FREESTANDING_TOOLCHAIN" = "xllvm" ];
     if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE llvm-addr2line || break; fi
     if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR llvm-ar || break; fi
     if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC clang || break; fi
+    if [ -z "$FREESTANDING_CXX" ]; then check_component FREESTANDING_CXX clang++ || break; fi
     if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT llvm-cxxfilt || break; fi
     if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD ld.lld || break; fi
     if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM llvm-nm || break; fi
@@ -106,6 +116,10 @@ if [ -z "$FREESTANDING_TOOLCHAIN" ] || [ "x$FREESTANDING_TOOLCHAIN" = "xllvm" ];
     if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
         _FREESTANDING_CC="clang -target $TRIPLET"
         validate_cc "$_FREESTANDING_CC" || break
+    fi
+    if [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
+        _FREESTANDING_CXX="clang++ -target $TRIPLET"
+        validate_cxx "$_FREESTANDING_CXX" || break
     fi
 
     TOOLCHAIN_VALID=yes
@@ -138,6 +152,7 @@ if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
     if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE $FREESTANDING_TOOLCHAIN-addr2line || break; fi
     if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR $FREESTANDING_TOOLCHAIN-ar || break; fi
     if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC $FREESTANDING_TOOLCHAIN-gcc || break; fi
+    if [ -z "$FREESTANDING_CXX" ]; then check_component FREESTANDING_CXX $FREESTANDING_TOOLCHAIN-g++ || break; fi
     if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT $FREESTANDING_TOOLCHAIN-c++filt || break; fi
     if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD $FREESTANDING_TOOLCHAIN-ld || break; fi
     if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM $FREESTANDING_TOOLCHAIN-nm || break; fi
@@ -151,6 +166,9 @@ if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
 
     if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
         validate_cc "$_FREESTANDING_CC" || break
+    fi
+    if [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
+        validate_cxx "$_FREESTANDING_CXX" || break
     fi
 
     TOOLCHAIN_VALID=yes
@@ -173,6 +191,7 @@ if ! [ -z "$CC" ] && [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
     if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE $CC_TRIPLET-addr2line || break; fi
     if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR $CC_TRIPLET-ar || break; fi
     if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC $CC_TRIPLET-gcc || break; fi
+    if [ -z "$FREESTANDING_CXX" ]; then check_component FREESTANDING_CXX $CC_TRIPLET-g++ || break; fi
     if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT $CC_TRIPLET-c++filt || break; fi
     if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD $CC_TRIPLET-ld || break; fi
     if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM $CC_TRIPLET-nm || break; fi
@@ -187,6 +206,9 @@ if ! [ -z "$CC" ] && [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
     if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
         validate_cc "$_FREESTANDING_CC" || break
     fi
+    if [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
+        validate_cxx "$_FREESTANDING_CXX" || break
+    fi
 
     TOOLCHAIN_VALID=yes
     break
@@ -199,6 +221,7 @@ if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
     if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE addr2line || break; fi
     if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR ar || break; fi
     if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC gcc || break; fi
+    if [ -z "$FREESTANDING_CXX" ]; then check_component FREESTANDING_CXX g++ || break; fi
     if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT c++filt || break; fi
     if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD ld || break; fi
     if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM nm || break; fi
@@ -212,6 +235,9 @@ if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
 
     if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
         validate_cc "$_FREESTANDING_CC" || break
+    fi
+    if [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
+        validate_cxx "$_FREESTANDING_CXX" || break
     fi
 
     TOOLCHAIN_VALID=yes
@@ -231,6 +257,7 @@ custom_check_fail() {
 if ! [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE "$FREESTANDING_ADDR2LINE" || custom_check_fail "$FREESTANDING_ADDR2LINE"; fi
 if ! [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR "$FREESTANDING_AR" || custom_check_fail "$FREESTANDING_AR"; fi
 if ! [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC "$FREESTANDING_CC" || custom_check_fail "$FREESTANDING_CC"; fi
+if ! [ -z "$FREESTANDING_CXX" ]; then check_component FREESTANDING_CXX "$FREESTANDING_CXX" || custom_check_fail "$FREESTANDING_CXX"; fi
 if ! [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT "$FREESTANDING_CXXFILT" || custom_check_fail "$FREESTANDING_CXXFILT"; fi
 if ! [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD "$FREESTANDING_LD" || custom_check_fail "$FREESTANDING_LD"; fi
 if ! [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM "$FREESTANDING_NM" || custom_check_fail "$FREESTANDING_NM"; fi
@@ -245,6 +272,12 @@ if ! [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP "$FRE
 if ! [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
     if ! validate_cc "$_FREESTANDING_CC"; then
         echo "ERROR: C compiler '$FREESTANDING_CC' does not support specified architecture '$ARCHITECTURE'" 1>&2
+        exit 1
+    fi
+fi
+if ! [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
+    if ! validate_cxx "$_FREESTANDING_CXX"; then
+        echo "ERROR: C++ compiler '$FREESTANDING_CXX' does not support specified architecture '$ARCHITECTURE'" 1>&2
         exit 1
     fi
 fi
@@ -266,6 +299,8 @@ FREESTANDING_AR ?= $_FREESTANDING_AR
 export FREESTANDING_AR
 FREESTANDING_CC ?= $_FREESTANDING_CC
 export FREESTANDING_CC
+FREESTANDING_CXX ?= $_FREESTANDING_CXX
+export FREESTANDING_CXX
 FREESTANDING_CXXFILT ?= $_FREESTANDING_CXXFILT
 export FREESTANDING_CXXFILT
 FREESTANDING_LD ?= $_FREESTANDING_LD
