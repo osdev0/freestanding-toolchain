@@ -121,6 +121,11 @@ if [ "$TOOLCHAIN_VALID" = "no" ]; then
     unset_toolchain
 fi
 
+if [ "x$FREESTANDING_TOOLCHAIN" = "xgnu" ]; then
+    unset FREESTANDING_TOOLCHAIN
+    break
+fi
+
 # Now try a prefixed GCC toolchain
 ENFORCE_TOOLCHAIN=no
 if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
