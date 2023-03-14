@@ -68,19 +68,19 @@ validate_cc() {
 }
 
 unset_toolchain() {
-    unset _CROSS_ADDR2LINE
-    unset _CROSS_AR
-    unset _CROSS_CC
-    unset _CROSS_CXXFILT
-    unset _CROSS_LD
-    unset _CROSS_NM
-    unset _CROSS_OBJCOPY
-    unset _CROSS_OBJDUMP
-    unset _CROSS_RANLIB
-    unset _CROSS_READELF
-    unset _CROSS_SIZE
-    unset _CROSS_STRINGS
-    unset _CROSS_STRIP
+    unset _FREESTANDING_ADDR2LINE
+    unset _FREESTANDING_AR
+    unset _FREESTANDING_CC
+    unset _FREESTANDING_CXXFILT
+    unset _FREESTANDING_LD
+    unset _FREESTANDING_NM
+    unset _FREESTANDING_OBJCOPY
+    unset _FREESTANDING_OBJDUMP
+    unset _FREESTANDING_RANLIB
+    unset _FREESTANDING_READELF
+    unset _FREESTANDING_SIZE
+    unset _FREESTANDING_STRINGS
+    unset _FREESTANDING_STRIP
 }
 
 unset_toolchain
@@ -88,24 +88,24 @@ unset_toolchain
 TOOLCHAIN_VALID=no
 
 # First check if we have LLVM
-if [ -z "$CROSS_TOOLCHAIN" ] || [ "x$CROSS_TOOLCHAIN" = "xllvm" ]; then while true; do
-    if [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE llvm-addr2line || break; fi
-    if [ -z "$CROSS_AR" ]; then check_component CROSS_AR llvm-ar || break; fi
-    if [ -z "$CROSS_CC" ]; then check_component CROSS_CC clang || break; fi
-    if [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT llvm-cxxfilt || break; fi
-    if [ -z "$CROSS_LD" ]; then check_component CROSS_LD ld.lld || break; fi
-    if [ -z "$CROSS_NM" ]; then check_component CROSS_NM llvm-nm || break; fi
-    if [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY llvm-objcopy || break; fi
-    if [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP llvm-objdump || break; fi
-    if [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB llvm-ranlib || break; fi
-    if [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF llvm-readelf || break; fi
-    if [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE llvm-size || break; fi
-    if [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS llvm-strings || break; fi
-    if [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP llvm-strip || break; fi
+if [ -z "$FREESTANDING_TOOLCHAIN" ] || [ "x$FREESTANDING_TOOLCHAIN" = "xllvm" ]; then while true; do
+    if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE llvm-addr2line || break; fi
+    if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR llvm-ar || break; fi
+    if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC clang || break; fi
+    if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT llvm-cxxfilt || break; fi
+    if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD ld.lld || break; fi
+    if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM llvm-nm || break; fi
+    if [ -z "$FREESTANDING_OBJCOPY" ]; then check_component FREESTANDING_OBJCOPY llvm-objcopy || break; fi
+    if [ -z "$FREESTANDING_OBJDUMP" ]; then check_component FREESTANDING_OBJDUMP llvm-objdump || break; fi
+    if [ -z "$FREESTANDING_RANLIB" ]; then check_component FREESTANDING_RANLIB llvm-ranlib || break; fi
+    if [ -z "$FREESTANDING_READELF" ]; then check_component FREESTANDING_READELF llvm-readelf || break; fi
+    if [ -z "$FREESTANDING_SIZE" ]; then check_component FREESTANDING_SIZE llvm-size || break; fi
+    if [ -z "$FREESTANDING_STRINGS" ]; then check_component FREESTANDING_STRINGS llvm-strings || break; fi
+    if [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP llvm-strip || break; fi
 
-    if [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
-        _CROSS_CC="clang -target $TRIPLET"
-        validate_cc "$_CROSS_CC" || break
+    if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
+        _FREESTANDING_CC="clang -target $TRIPLET"
+        validate_cc "$_FREESTANDING_CC" || break
     fi
 
     TOOLCHAIN_VALID=yes
@@ -113,7 +113,7 @@ if [ -z "$CROSS_TOOLCHAIN" ] || [ "x$CROSS_TOOLCHAIN" = "xllvm" ]; then while tr
 done; fi
 
 if [ "$TOOLCHAIN_VALID" = "no" ]; then
-    if [ "x$CROSS_TOOLCHAIN" = "xllvm" ]; then
+    if [ "x$FREESTANDING_TOOLCHAIN" = "xllvm" ]; then
         echo "ERROR: could not detect LLVM toolchain" 1>&2
         exit 1
     fi
@@ -124,28 +124,28 @@ fi
 # Now try a prefixed GCC toolchain
 ENFORCE_TOOLCHAIN=no
 if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
-    if [ -z "$CROSS_TOOLCHAIN" ]; then
-        CROSS_TOOLCHAIN="$TRIPLET"
+    if [ -z "$FREESTANDING_TOOLCHAIN" ]; then
+        FREESTANDING_TOOLCHAIN="$TRIPLET"
     else
         ENFORCE_TOOLCHAIN=yes
     fi
 
-    if [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE $CROSS_TOOLCHAIN-addr2line || break; fi
-    if [ -z "$CROSS_AR" ]; then check_component CROSS_AR $CROSS_TOOLCHAIN-ar || break; fi
-    if [ -z "$CROSS_CC" ]; then check_component CROSS_CC $CROSS_TOOLCHAIN-gcc || break; fi
-    if [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT $CROSS_TOOLCHAIN-c++filt || break; fi
-    if [ -z "$CROSS_LD" ]; then check_component CROSS_LD $CROSS_TOOLCHAIN-ld || break; fi
-    if [ -z "$CROSS_NM" ]; then check_component CROSS_NM $CROSS_TOOLCHAIN-nm || break; fi
-    if [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY $CROSS_TOOLCHAIN-objcopy || break; fi
-    if [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP $CROSS_TOOLCHAIN-objdump || break; fi
-    if [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB $CROSS_TOOLCHAIN-ranlib || break; fi
-    if [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF $CROSS_TOOLCHAIN-readelf || break; fi
-    if [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE $CROSS_TOOLCHAIN-size || break; fi
-    if [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS $CROSS_TOOLCHAIN-strings || break; fi
-    if [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP $CROSS_TOOLCHAIN-strip || break; fi
+    if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE $FREESTANDING_TOOLCHAIN-addr2line || break; fi
+    if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR $FREESTANDING_TOOLCHAIN-ar || break; fi
+    if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC $FREESTANDING_TOOLCHAIN-gcc || break; fi
+    if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT $FREESTANDING_TOOLCHAIN-c++filt || break; fi
+    if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD $FREESTANDING_TOOLCHAIN-ld || break; fi
+    if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM $FREESTANDING_TOOLCHAIN-nm || break; fi
+    if [ -z "$FREESTANDING_OBJCOPY" ]; then check_component FREESTANDING_OBJCOPY $FREESTANDING_TOOLCHAIN-objcopy || break; fi
+    if [ -z "$FREESTANDING_OBJDUMP" ]; then check_component FREESTANDING_OBJDUMP $FREESTANDING_TOOLCHAIN-objdump || break; fi
+    if [ -z "$FREESTANDING_RANLIB" ]; then check_component FREESTANDING_RANLIB $FREESTANDING_TOOLCHAIN-ranlib || break; fi
+    if [ -z "$FREESTANDING_READELF" ]; then check_component FREESTANDING_READELF $FREESTANDING_TOOLCHAIN-readelf || break; fi
+    if [ -z "$FREESTANDING_SIZE" ]; then check_component FREESTANDING_SIZE $FREESTANDING_TOOLCHAIN-size || break; fi
+    if [ -z "$FREESTANDING_STRINGS" ]; then check_component FREESTANDING_STRINGS $FREESTANDING_TOOLCHAIN-strings || break; fi
+    if [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP $FREESTANDING_TOOLCHAIN-strip || break; fi
 
-    if [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
-        validate_cc "$_CROSS_CC" || break
+    if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
+        validate_cc "$_FREESTANDING_CC" || break
     fi
 
     TOOLCHAIN_VALID=yes
@@ -165,22 +165,22 @@ fi
 if ! [ -z "$CC" ] && [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
     CC_TRIPLET="$($CC -dumpmachine)"
 
-    if [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE $CC_TRIPLET-addr2line || break; fi
-    if [ -z "$CROSS_AR" ]; then check_component CROSS_AR $CC_TRIPLET-ar || break; fi
-    if [ -z "$CROSS_CC" ]; then check_component CROSS_CC $CC_TRIPLET-gcc || break; fi
-    if [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT $CC_TRIPLET-c++filt || break; fi
-    if [ -z "$CROSS_LD" ]; then check_component CROSS_LD $CC_TRIPLET-ld || break; fi
-    if [ -z "$CROSS_NM" ]; then check_component CROSS_NM $CC_TRIPLET-nm || break; fi
-    if [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY $CC_TRIPLET-objcopy || break; fi
-    if [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP $CC_TRIPLET-objdump || break; fi
-    if [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB $CC_TRIPLET-ranlib || break; fi
-    if [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF $CC_TRIPLET-readelf || break; fi
-    if [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE $CC_TRIPLET-size || break; fi
-    if [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS $CC_TRIPLET-strings || break; fi
-    if [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP $CC_TRIPLET-strip || break; fi
+    if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE $CC_TRIPLET-addr2line || break; fi
+    if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR $CC_TRIPLET-ar || break; fi
+    if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC $CC_TRIPLET-gcc || break; fi
+    if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT $CC_TRIPLET-c++filt || break; fi
+    if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD $CC_TRIPLET-ld || break; fi
+    if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM $CC_TRIPLET-nm || break; fi
+    if [ -z "$FREESTANDING_OBJCOPY" ]; then check_component FREESTANDING_OBJCOPY $CC_TRIPLET-objcopy || break; fi
+    if [ -z "$FREESTANDING_OBJDUMP" ]; then check_component FREESTANDING_OBJDUMP $CC_TRIPLET-objdump || break; fi
+    if [ -z "$FREESTANDING_RANLIB" ]; then check_component FREESTANDING_RANLIB $CC_TRIPLET-ranlib || break; fi
+    if [ -z "$FREESTANDING_READELF" ]; then check_component FREESTANDING_READELF $CC_TRIPLET-readelf || break; fi
+    if [ -z "$FREESTANDING_SIZE" ]; then check_component FREESTANDING_SIZE $CC_TRIPLET-size || break; fi
+    if [ -z "$FREESTANDING_STRINGS" ]; then check_component FREESTANDING_STRINGS $CC_TRIPLET-strings || break; fi
+    if [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP $CC_TRIPLET-strip || break; fi
 
-    if [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
-        validate_cc "$_CROSS_CC" || break
+    if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
+        validate_cc "$_FREESTANDING_CC" || break
     fi
 
     TOOLCHAIN_VALID=yes
@@ -191,22 +191,22 @@ done; fi
 if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
     unset_toolchain
 
-    if [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE addr2line || break; fi
-    if [ -z "$CROSS_AR" ]; then check_component CROSS_AR ar || break; fi
-    if [ -z "$CROSS_CC" ]; then check_component CROSS_CC gcc || break; fi
-    if [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT c++filt || break; fi
-    if [ -z "$CROSS_LD" ]; then check_component CROSS_LD ld || break; fi
-    if [ -z "$CROSS_NM" ]; then check_component CROSS_NM nm || break; fi
-    if [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY objcopy || break; fi
-    if [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP objdump || break; fi
-    if [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB ranlib || break; fi
-    if [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF readelf || break; fi
-    if [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE size || break; fi
-    if [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS strings || break; fi
-    if [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP strip || break; fi
+    if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE addr2line || break; fi
+    if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR ar || break; fi
+    if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC gcc || break; fi
+    if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT c++filt || break; fi
+    if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD ld || break; fi
+    if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM nm || break; fi
+    if [ -z "$FREESTANDING_OBJCOPY" ]; then check_component FREESTANDING_OBJCOPY objcopy || break; fi
+    if [ -z "$FREESTANDING_OBJDUMP" ]; then check_component FREESTANDING_OBJDUMP objdump || break; fi
+    if [ -z "$FREESTANDING_RANLIB" ]; then check_component FREESTANDING_RANLIB ranlib || break; fi
+    if [ -z "$FREESTANDING_READELF" ]; then check_component FREESTANDING_READELF readelf || break; fi
+    if [ -z "$FREESTANDING_SIZE" ]; then check_component FREESTANDING_SIZE size || break; fi
+    if [ -z "$FREESTANDING_STRINGS" ]; then check_component FREESTANDING_STRINGS strings || break; fi
+    if [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP strip || break; fi
 
-    if [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
-        validate_cc "$_CROSS_CC" || break
+    if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
+        validate_cc "$_FREESTANDING_CC" || break
     fi
 
     TOOLCHAIN_VALID=yes
@@ -223,65 +223,65 @@ custom_check_fail() {
     exit 1
 }
 
-if ! [ -z "$CROSS_ADDR2LINE" ]; then check_component CROSS_ADDR2LINE "$CROSS_ADDR2LINE" || custom_check_fail "$CROSS_ADDR2LINE"; fi
-if ! [ -z "$CROSS_AR" ]; then check_component CROSS_AR "$CROSS_AR" || custom_check_fail "$CROSS_AR"; fi
-if ! [ -z "$CROSS_CC" ]; then check_component CROSS_CC "$CROSS_CC" || custom_check_fail "$CROSS_CC"; fi
-if ! [ -z "$CROSS_CXXFILT" ]; then check_component CROSS_CXXFILT "$CROSS_CXXFILT" || custom_check_fail "$CROSS_CXXFILT"; fi
-if ! [ -z "$CROSS_LD" ]; then check_component CROSS_LD "$CROSS_LD" || custom_check_fail "$CROSS_LD"; fi
-if ! [ -z "$CROSS_NM" ]; then check_component CROSS_NM "$CROSS_NM" || custom_check_fail "$CROSS_NM"; fi
-if ! [ -z "$CROSS_OBJCOPY" ]; then check_component CROSS_OBJCOPY "$CROSS_OBJCOPY" || custom_check_fail "$CROSS_OBJCOPY"; fi
-if ! [ -z "$CROSS_OBJDUMP" ]; then check_component CROSS_OBJDUMP "$CROSS_OBJDUMP" || custom_check_fail "$CROSS_OBJDUMP"; fi
-if ! [ -z "$CROSS_RANLIB" ]; then check_component CROSS_RANLIB "$CROSS_RANLIB" || custom_check_fail "$CROSS_RANLIB"; fi
-if ! [ -z "$CROSS_READELF" ]; then check_component CROSS_READELF "$CROSS_READELF" || custom_check_fail "$CROSS_READELF"; fi
-if ! [ -z "$CROSS_SIZE" ]; then check_component CROSS_SIZE "$CROSS_SIZE" || custom_check_fail "$CROSS_SIZE"; fi
-if ! [ -z "$CROSS_STRINGS" ]; then check_component CROSS_STRINGS "$CROSS_STRINGS" || custom_check_fail "$CROSS_STRING"; fi
-if ! [ -z "$CROSS_STRIP" ]; then check_component CROSS_STRIP "$CROSS_STRIP" || custom_check_fail "$CROSS_STRIP"; fi
+if ! [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE "$FREESTANDING_ADDR2LINE" || custom_check_fail "$FREESTANDING_ADDR2LINE"; fi
+if ! [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR "$FREESTANDING_AR" || custom_check_fail "$FREESTANDING_AR"; fi
+if ! [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC "$FREESTANDING_CC" || custom_check_fail "$FREESTANDING_CC"; fi
+if ! [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT "$FREESTANDING_CXXFILT" || custom_check_fail "$FREESTANDING_CXXFILT"; fi
+if ! [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD "$FREESTANDING_LD" || custom_check_fail "$FREESTANDING_LD"; fi
+if ! [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM "$FREESTANDING_NM" || custom_check_fail "$FREESTANDING_NM"; fi
+if ! [ -z "$FREESTANDING_OBJCOPY" ]; then check_component FREESTANDING_OBJCOPY "$FREESTANDING_OBJCOPY" || custom_check_fail "$FREESTANDING_OBJCOPY"; fi
+if ! [ -z "$FREESTANDING_OBJDUMP" ]; then check_component FREESTANDING_OBJDUMP "$FREESTANDING_OBJDUMP" || custom_check_fail "$FREESTANDING_OBJDUMP"; fi
+if ! [ -z "$FREESTANDING_RANLIB" ]; then check_component FREESTANDING_RANLIB "$FREESTANDING_RANLIB" || custom_check_fail "$FREESTANDING_RANLIB"; fi
+if ! [ -z "$FREESTANDING_READELF" ]; then check_component FREESTANDING_READELF "$FREESTANDING_READELF" || custom_check_fail "$FREESTANDING_READELF"; fi
+if ! [ -z "$FREESTANDING_SIZE" ]; then check_component FREESTANDING_SIZE "$FREESTANDING_SIZE" || custom_check_fail "$FREESTANDING_SIZE"; fi
+if ! [ -z "$FREESTANDING_STRINGS" ]; then check_component FREESTANDING_STRINGS "$FREESTANDING_STRINGS" || custom_check_fail "$FREESTANDING_STRING"; fi
+if ! [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP "$FREESTANDING_STRIP" || custom_check_fail "$FREESTANDING_STRIP"; fi
 
-if ! [ -z "$CROSS_CC" ] && [ "x$WANT_CROSS_CC" = "xyes" ]; then
-    if ! validate_cc "$_CROSS_CC"; then
-        echo "ERROR: C compiler '$CROSS_CC' does not support specified architecture '$ARCHITECTURE'" 1>&2
+if ! [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
+    if ! validate_cc "$_FREESTANDING_CC"; then
+        echo "ERROR: C compiler '$FREESTANDING_CC' does not support specified architecture '$ARCHITECTURE'" 1>&2
         exit 1
     fi
 fi
 
-unset CROSS_LD_HAS_NO_PIE
-if [ "x$WANT_CROSS_LD" = "xyes" ]; then
-    CROSS_LD_HAS_NO_PIE=no
+unset FREESTANDING_LD_HAS_NO_PIE
+if [ "x$WANT_FREESTANDING_LD" = "xyes" ]; then
+    FREESTANDING_LD_HAS_NO_PIE=no
 
-    if $_CROSS_LD --help 2>&1 | grep 'no-pie' >/dev/null 2>&1; then
-        CROSS_LD_HAS_NO_PIE=yes
+    if $_FREESTANDING_LD --help 2>&1 | grep 'no-pie' >/dev/null 2>&1; then
+        FREESTANDING_LD_HAS_NO_PIE=yes
     fi
 fi
 
 # Output the final makefile chunk
 cat <<EOF
-CROSS_ADDR2LINE ?= $_CROSS_ADDR2LINE
-export CROSS_ADDR2LINE
-CROSS_AR ?= $_CROSS_AR
-export CROSS_AR
-CROSS_CC ?= $_CROSS_CC
-export CROSS_CC
-CROSS_CXXFILT ?= $_CROSS_CXXFILT
-export CROSS_CXXFILT
-CROSS_LD ?= $_CROSS_LD
-export CROSS_LD
-CROSS_NM ?= $_CROSS_NM
-export CROSS_NM
-CROSS_OBJCOPY ?= $_CROSS_OBJCOPY
-export CROSS_OBJCOPY
-CROSS_OBJDUMP ?= $_CROSS_OBJDUMP
-export CROSS_OBJDUMP
-CROSS_RANLIB ?= $_CROSS_RANLIB
-export CROSS_RANLIB
-CROSS_READELF ?= $_CROSS_READELF
-export CROSS_READELF
-CROSS_SIZE ?= $_CROSS_SIZE
-export CROSS_SIZE
-CROSS_STRINGS ?= $_CROSS_STRINGS
-export CROSS_STRINGS
-CROSS_STRIP ?= $_CROSS_STRIP
-export CROSS_STRIP
+FREESTANDING_ADDR2LINE ?= $_FREESTANDING_ADDR2LINE
+export FREESTANDING_ADDR2LINE
+FREESTANDING_AR ?= $_FREESTANDING_AR
+export FREESTANDING_AR
+FREESTANDING_CC ?= $_FREESTANDING_CC
+export FREESTANDING_CC
+FREESTANDING_CXXFILT ?= $_FREESTANDING_CXXFILT
+export FREESTANDING_CXXFILT
+FREESTANDING_LD ?= $_FREESTANDING_LD
+export FREESTANDING_LD
+FREESTANDING_NM ?= $_FREESTANDING_NM
+export FREESTANDING_NM
+FREESTANDING_OBJCOPY ?= $_FREESTANDING_OBJCOPY
+export FREESTANDING_OBJCOPY
+FREESTANDING_OBJDUMP ?= $_FREESTANDING_OBJDUMP
+export FREESTANDING_OBJDUMP
+FREESTANDING_RANLIB ?= $_FREESTANDING_RANLIB
+export FREESTANDING_RANLIB
+FREESTANDING_READELF ?= $_FREESTANDING_READELF
+export FREESTANDING_READELF
+FREESTANDING_SIZE ?= $_FREESTANDING_SIZE
+export FREESTANDING_SIZE
+FREESTANDING_STRINGS ?= $_FREESTANDING_STRINGS
+export FREESTANDING_STRINGS
+FREESTANDING_STRIP ?= $_FREESTANDING_STRIP
+export FREESTANDING_STRIP
 
-CROSS_LD_HAS_NO_PIE ?= $CROSS_LD_HAS_NO_PIE
-export CROSS_LD_HAS_NO_PIE
+FREESTANDING_LD_HAS_NO_PIE ?= $FREESTANDING_LD_HAS_NO_PIE
+export FREESTANDING_LD_HAS_NO_PIE
 EOF
