@@ -22,7 +22,7 @@ IFS=" ""	"'
 '
 
 if [ -z "$ARCHITECTURE" ]; then
-    echo "ERROR: ARCHITECTURE must be specified" 1>&2
+    echo "ERROR: ARCHITECTURE must be specified"
     exit 1
 fi
 
@@ -37,12 +37,12 @@ esac
 
 check_component() {
     if eval [ "x\$WANT_$1" = "xyes" ]; then
-        printf "checking for $2... " 1>&2
+        printf "checking for $2 ($ARCHITECTURE)... "
         if ! command -v $2 >/dev/null 2>&1; then
-            echo "no" 1>&2
+            echo "no"
             return 1
         fi
-        echo "yes" 1>&2
+        echo "yes"
         eval "_$1"="$2"
     fi
 }
@@ -128,7 +128,7 @@ done; fi
 
 if [ "$TOOLCHAIN_VALID" = "no" ]; then
     if [ "x$FREESTANDING_TOOLCHAIN" = "xllvm" ]; then
-        echo "ERROR: could not detect LLVM toolchain" 1>&2
+        echo "ERROR: could not detect LLVM toolchain"
         exit 1
     fi
 
@@ -177,7 +177,7 @@ done; fi
 
 if [ "$TOOLCHAIN_VALID" = "no" ]; then
     if [ "$ENFORCE_TOOLCHAIN" = "yes" ]; then
-        echo "ERROR: requested toolchain not valid" 1>&2
+        echo "ERROR: requested toolchain not valid"
         exit 1
     fi
 
@@ -245,12 +245,12 @@ if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
 done; fi
 
 if [ "$TOOLCHAIN_VALID" = "no" ]; then
-    echo "ERROR: could not find any valid toolchain for target '$ARCHITECTURE'" 1>&2
+    echo "ERROR: could not find any valid toolchain for target '$ARCHITECTURE'"
     exit 1
 fi
 
 custom_check_fail() {
-    echo "ERROR: custom toolchain component '$1' not valid" 1>&2
+    echo "ERROR: custom toolchain component '$1' not valid"
     exit 1
 }
 
@@ -271,13 +271,13 @@ if ! [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP "$FRE
 
 if ! [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
     if ! validate_cc "$_FREESTANDING_CC"; then
-        echo "ERROR: C compiler '$FREESTANDING_CC' does not support specified architecture '$ARCHITECTURE'" 1>&2
+        echo "ERROR: C compiler '$FREESTANDING_CC' does not support specified architecture '$ARCHITECTURE'"
         exit 1
     fi
 fi
 if ! [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
     if ! validate_cxx "$_FREESTANDING_CXX"; then
-        echo "ERROR: C++ compiler '$FREESTANDING_CXX' does not support specified architecture '$ARCHITECTURE'" 1>&2
+        echo "ERROR: C++ compiler '$FREESTANDING_CXX' does not support specified architecture '$ARCHITECTURE'"
         exit 1
     fi
 fi
@@ -301,7 +301,7 @@ if [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
 fi
 
 # Output the final makefile chunk
-cat <<'EOF'
+cat 1>&2 <<'EOF'
 define DEFAULT_VAR =
     ifeq ($(origin $1),default)
         override $(1) := $(2)
@@ -313,7 +313,7 @@ endef
 
 EOF
 
-cat <<EOF
+cat 1>&2 <<EOF
 \$(eval \$(call DEFAULT_VAR,${FREESTANDING_TOOLCHAIN_PREFIX}ADDR2LINE${FREESTANDING_TOOLCHAIN_SUFFIX},$_FREESTANDING_ADDR2LINE))
 \$(eval \$(call DEFAULT_VAR,${FREESTANDING_TOOLCHAIN_PREFIX}AR${FREESTANDING_TOOLCHAIN_SUFFIX},$_FREESTANDING_AR))
 \$(eval \$(call DEFAULT_VAR,${FREESTANDING_TOOLCHAIN_PREFIX}CC${FREESTANDING_TOOLCHAIN_SUFFIX},$_FREESTANDING_CC))
