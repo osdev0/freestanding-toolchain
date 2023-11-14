@@ -137,7 +137,6 @@ fi
 
 if [ "x$FREESTANDING_TOOLCHAIN" = "xgnu" ]; then
     unset FREESTANDING_TOOLCHAIN
-    break
 fi
 
 # Now try a prefixed GCC toolchain
