@@ -22,7 +22,7 @@ IFS=" ""	"'
 '
 
 if [ -z "$ARCHITECTURE" ]; then
-    echo "ERROR: ARCHITECTURE must be specified"
+    echo 'error: $ARCHITECTURE must be specified'
     exit 1
 fi
 
@@ -128,7 +128,7 @@ done; fi
 
 if [ "$TOOLCHAIN_VALID" = "no" ]; then
     if [ "x$FREESTANDING_TOOLCHAIN" = "xllvm" ]; then
-        echo "ERROR: could not detect LLVM toolchain"
+        echo "error: could not detect LLVM toolchain"
         exit 1
     fi
 
@@ -176,7 +176,7 @@ done; fi
 
 if [ "$TOOLCHAIN_VALID" = "no" ]; then
     if [ "$ENFORCE_TOOLCHAIN" = "yes" ]; then
-        echo "ERROR: requested toolchain not valid"
+        echo "error: requested toolchain not valid"
         exit 1
     fi
 
@@ -244,12 +244,12 @@ if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
 done; fi
 
 if [ "$TOOLCHAIN_VALID" = "no" ]; then
-    echo "ERROR: could not find any valid toolchain for target '$ARCHITECTURE'"
+    echo "error: could not find any valid toolchain for target '$ARCHITECTURE'"
     exit 1
 fi
 
 custom_check_fail() {
-    echo "ERROR: custom toolchain component '$1' not valid"
+    echo "error: custom toolchain component '$1' not valid"
     exit 1
 }
 
@@ -270,13 +270,13 @@ if ! [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP "$FRE
 
 if ! [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
     if ! validate_cc "$_FREESTANDING_CC"; then
-        echo "ERROR: C compiler '$FREESTANDING_CC' does not support specified architecture '$ARCHITECTURE'"
+        echo "error: C compiler '$FREESTANDING_CC' does not support specified architecture '$ARCHITECTURE'"
         exit 1
     fi
 fi
 if ! [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
     if ! validate_cxx "$_FREESTANDING_CXX"; then
-        echo "ERROR: C++ compiler '$FREESTANDING_CXX' does not support specified architecture '$ARCHITECTURE'"
+        echo "error: C++ compiler '$FREESTANDING_CXX' does not support specified architecture '$ARCHITECTURE'"
         exit 1
     fi
 fi
