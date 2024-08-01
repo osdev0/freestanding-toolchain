@@ -30,6 +30,9 @@ case "$ARCHITECTURE" in
     arm)
         TRIPLET=${ARCHITECTURE}-none-eabi
         ;;
+    loongarch64)
+        TRIPLET=${ARCHITECTURE}-none
+        ;;
     *)
         TRIPLET=${ARCHITECTURE}-elf
         ;;
