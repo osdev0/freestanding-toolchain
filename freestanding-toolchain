@@ -28,13 +28,10 @@ fi
 
 case "$ARCHITECTURE" in
     arm)
-        TRIPLET=${ARCHITECTURE}-none-eabi
-        ;;
-    loongarch64)
-        TRIPLET=${ARCHITECTURE}-none
+        TRIPLET=${ARCHITECTURE}-unknown-none-eabi
         ;;
     *)
-        TRIPLET=${ARCHITECTURE}-elf
+        TRIPLET=${ARCHITECTURE}-unknown-none
         ;;
 esac
 
@@ -144,38 +141,54 @@ fi
 
 # Now try a prefixed GCC toolchain
 ENFORCE_TOOLCHAIN=no
-if [ "$TOOLCHAIN_VALID" = "no" ]; then while true; do
+if [ "$TOOLCHAIN_VALID" = "no" ]; then
     if [ -z "$FREESTANDING_TOOLCHAIN" ]; then
         FREESTANDING_TOOLCHAIN="$TRIPLET"
     else
         ENFORCE_TOOLCHAIN=yes
     fi
 
-    if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE $FREESTANDING_TOOLCHAIN-addr2line || break; fi
-    if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR $FREESTANDING_TOOLCHAIN-ar || break; fi
-    if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC $FREESTANDING_TOOLCHAIN-gcc || break; fi
-    if [ -z "$FREESTANDING_CXX" ]; then check_component FREESTANDING_CXX $FREESTANDING_TOOLCHAIN-g++ || break; fi
-    if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT $FREESTANDING_TOOLCHAIN-c++filt || break; fi
-    if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD $FREESTANDING_TOOLCHAIN-ld || break; fi
-    if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM $FREESTANDING_TOOLCHAIN-nm || break; fi
-    if [ -z "$FREESTANDING_OBJCOPY" ]; then check_component FREESTANDING_OBJCOPY $FREESTANDING_TOOLCHAIN-objcopy || break; fi
-    if [ -z "$FREESTANDING_OBJDUMP" ]; then check_component FREESTANDING_OBJDUMP $FREESTANDING_TOOLCHAIN-objdump || break; fi
-    if [ -z "$FREESTANDING_RANLIB" ]; then check_component FREESTANDING_RANLIB $FREESTANDING_TOOLCHAIN-ranlib || break; fi
-    if [ -z "$FREESTANDING_READELF" ]; then check_component FREESTANDING_READELF $FREESTANDING_TOOLCHAIN-readelf || break; fi
-    if [ -z "$FREESTANDING_SIZE" ]; then check_component FREESTANDING_SIZE $FREESTANDING_TOOLCHAIN-size || break; fi
-    if [ -z "$FREESTANDING_STRINGS" ]; then check_component FREESTANDING_STRINGS $FREESTANDING_TOOLCHAIN-strings || break; fi
-    if [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP $FREESTANDING_TOOLCHAIN-strip || break; fi
+    FIRST_LOOP=1
+    for i in $FREESTANDING_TOOLCHAIN \
+             $(echo $FREESTANDING_TOOLCHAIN | sed 's/-unknown-none/-elf/g') \
+             $(echo $FREESTANDING_TOOLCHAIN | sed 's/-unknown-none/-none/g') \
+             $(echo $FREESTANDING_TOOLCHAIN | sed 's/-unknown-none/-none-elf/g') \
+             $(echo $FREESTANDING_TOOLCHAIN | sed 's/-unknown-none/-unknown-none-elf/g') \
+             $(echo $FREESTANDING_TOOLCHAIN | sed 's/-unknown-none/-linux-gnu/g') \
+             $(echo $FREESTANDING_TOOLCHAIN | sed 's/-unknown-none/-pc-linux-gnu/g') \
+             $(echo $FREESTANDING_TOOLCHAIN | sed 's/-unknown-none/-unknown-linux-gnu/g') \
+    ; do
+        if [ "$FIRST_LOOP" = 0 ] && [ "$ENFORCE_TOOLCHAIN" = "yes" ]; then
+            break
+        fi
+        FIRST_LOOP=0
 
-    if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
-        validate_cc "$_FREESTANDING_CC" || break
-    fi
-    if [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
-        validate_cxx "$_FREESTANDING_CXX" || break
-    fi
+        if [ -z "$FREESTANDING_ADDR2LINE" ]; then check_component FREESTANDING_ADDR2LINE $i-addr2line || continue; fi
+        if [ -z "$FREESTANDING_AR" ]; then check_component FREESTANDING_AR $i-ar || continue; fi
+        if [ -z "$FREESTANDING_CC" ]; then check_component FREESTANDING_CC $i-gcc || continue; fi
+        if [ -z "$FREESTANDING_CXX" ]; then check_component FREESTANDING_CXX $i-g++ || continue; fi
+        if [ -z "$FREESTANDING_CXXFILT" ]; then check_component FREESTANDING_CXXFILT $i-c++filt || continue; fi
+        if [ -z "$FREESTANDING_LD" ]; then check_component FREESTANDING_LD $i-ld || continue; fi
+        if [ -z "$FREESTANDING_NM" ]; then check_component FREESTANDING_NM $i-nm || continue; fi
+        if [ -z "$FREESTANDING_OBJCOPY" ]; then check_component FREESTANDING_OBJCOPY $i-objcopy || continue; fi
+        if [ -z "$FREESTANDING_OBJDUMP" ]; then check_component FREESTANDING_OBJDUMP $i-objdump || continue; fi
+        if [ -z "$FREESTANDING_RANLIB" ]; then check_component FREESTANDING_RANLIB $i-ranlib || continue; fi
+        if [ -z "$FREESTANDING_READELF" ]; then check_component FREESTANDING_READELF $i-readelf || continue; fi
+        if [ -z "$FREESTANDING_SIZE" ]; then check_component FREESTANDING_SIZE $i-size || continue; fi
+        if [ -z "$FREESTANDING_STRINGS" ]; then check_component FREESTANDING_STRINGS $i-strings || continue; fi
+        if [ -z "$FREESTANDING_STRIP" ]; then check_component FREESTANDING_STRIP $i-strip || continue; fi
 
-    TOOLCHAIN_VALID=yes
-    break
-done; fi
+        if [ -z "$FREESTANDING_CC" ] && [ "x$WANT_FREESTANDING_CC" = "xyes" ]; then
+            validate_cc "$_FREESTANDING_CC" || continue
+        fi
+        if [ -z "$FREESTANDING_CXX" ] && [ "x$WANT_FREESTANDING_CXX" = "xyes" ]; then
+            validate_cxx "$_FREESTANDING_CXX" || continue
+        fi
+
+        TOOLCHAIN_VALID=yes
+        break
+    done
+fi
 
 if [ "$TOOLCHAIN_VALID" = "no" ]; then
     if [ "$ENFORCE_TOOLCHAIN" = "yes" ]; then
